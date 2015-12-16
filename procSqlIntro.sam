@@ -1,0 +1,69 @@
+
+%let myfolder=%str(/folders/myfolders/HW5);
+libname homework "&myfolder";
+
+/*********** (a) Read instream data **************/
+data products;
+  infile "&myfolder/products.dat" FIRSTOBS=3;
+  input prodnum 4. @8 prodname $23. manunum 6. @43 prodtype $11. @57 rtlcost dollar6.;
+run;
+
+proc sql;
+	create table prodtable as	
+	select	prodnum format=4., 
+			prodname format=$23., 
+			manunum format=4., 
+			prodtype format=$11., 
+			rtlcost format=comma8.2
+	from products
+	;
+quit;
+
+/************ b) Use PROC SQL to insert a new row *************/
+proc sql;
+   insert into prodtable
+      set prodnum = 3480,
+          prodname ='Desktop Computer',
+          manunum = 780,
+          prodtype = 'Workstation',
+          rtlcost = 1799
+	;
+quit;
+
+/******* (c) Use PROC SQL to modify the data to reflect a 20% price increase on all software
+products, and a 20% discount on all the other products. *******/
+proc sql;
+	alter table prodtable
+	add newcost num format=dollar8.2 label="Retail Price"
+	;
+quit;
+
+proc sql;
+	update prodtable
+		set newcost=rtlcost*
+		case when prodtype like 'Software' then 1.20
+			else 0.8
+		end;
+;
+proc sql;
+	alter table prodtable
+	drop rtlcost;
+select * from prodtable;
+quit;
+
+/****** (d) Use PROC SQL to add title, footnote, labels and modify formats *********/
+Title1 "Product Information";
+footnote "Updated On &sysdate";
+options nodate nonumber;
+
+proc sql;
+	alter table prodtable
+	    modify prodnum label='Product Number'
+	    modify prodname label='Product Name'
+	    modify manunum label="Manufacturer's Number"
+	    modify prodtype label="Product Type"
+		;
+  select* from prodtable;
+quit;
+
+title1; footnote1;
